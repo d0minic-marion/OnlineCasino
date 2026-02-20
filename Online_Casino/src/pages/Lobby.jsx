@@ -1,7 +1,8 @@
-import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
+
 import "./lobby.css";
 
 
@@ -9,10 +10,13 @@ export default function Lobby() {
   const navigate = useNavigate();
 
   const balance = 12840;
-  const profileName = "Profil";
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+
+  const user = auth.currentUser;
+  const displayName = user?.displayName || "Profil";
+  const photoURL = user?.photoURL || "";
 
   useEffect(() => {
     const onDown = (e) => {
@@ -105,14 +109,20 @@ export default function Lobby() {
                   className="lm9-profile-btn"
                   onClick={() => setMenuOpen((v) => !v)}
                 >
-                  <span className="avatar">👤</span>
-                  <span>{profileName}</span>
+                  {photoURL ? (
+                    <img className="lm9-avatar-img" src={photoURL} alt="Profil" />
+                  ) : (
+                    <div className="lm9-avatar-fallback">
+                      {(displayName?.[0] || "P").toUpperCase()}
+                    </div>
+                  )}
+                  <span>{displayName}</span>
                   <span className="chev">▾</span>
                 </button>
 
                 {menuOpen && (
                   <div className="lm9-profile-menu">
-                    <button type="button" onClick={() => alert("À faire: page profil")}>
+                    <button type="button" onClick={() => navigate("/profil")}>
                       Mon profil
                     </button>
                     <button type="button" onClick={() => alert("À faire: historique")}>

@@ -211,3 +211,20 @@
   .lm9-topbar-inner{flex-direction:column; align-items:flex-start;}
   .lm9-topbar-right{width:100%; justify-content:space-between;}
 }
+
+.lm9-avatar-img{
+  width:26px; height:26px;
+  border-radius:999px;
+  object-fit:cover;
+  border:1px solid rgba(255,255,255,.18);
+}
+.lm9-avatar-fallback{
+  width:26px; height:26px;
+  border-radius:999px;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);
+  color:rgba(233,240,246,.92);
+  font-size:12px;
+}

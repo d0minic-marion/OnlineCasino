@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import SignIn from "./pages/SignIn";
 import Register from "./pages/Register";
 import Lobby from "./pages/Lobby";
+import Profile from "./pages/Profile";
 import ProtectedRoute, { PublicOnlyRoute } from "./auth/AuthGuard";
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
 
       <Route element={<ProtectedRoute redirectTo="/connexion" />}>
         <Route path="/lobby" element={<Lobby />} />
+        <Route path="/profil" element={<Profile />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

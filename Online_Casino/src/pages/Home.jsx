@@ -3,11 +3,12 @@ import "./home.css";
 import rouletteGif from "../assets/roulette.gif";
 import slotsGif from "../assets/slots.gif";
 import blackjackGif from "../assets/blackjack.gif";
-
+import { useNavigate } from "react-router-dom";
 
 export default function Home() {
 
   const [selectedGame, setSelectedGame] = useState("roulette");
+  const navigate = useNavigate();
 
   return (
     <div className="lm9">
@@ -15,23 +16,38 @@ export default function Home() {
         Simulation / Educational Only — No Real Money — No Prizes
       </div>
 
-      <header className="lm9-nav">
-        <div className="lm9-brand">
-          <div className="lm9-logo">Lotto<span>M9</span></div>
-          <div className="lm9-sub">Demo Casino</div>
-        </div>
+        <header className="lm9-nav">
+          <div className="lm9-nav-inner">
+            <div className="lm9-brand">
+              <div className="lm9-logo">Lotto<span>M9</span></div>
+              <div className="lm9-sub">Demo Casino</div>
+            </div>
 
-        <nav className="lm9-links">
-          <a href="#games">Games</a>
-          <a href="#fairness">Fairness</a>
-          <a href="#how">How it works</a>
-        </nav>
+            <nav className="lm9-links">
+              <a href="#games">Games</a>
+              <a href="#fairness">Fairness</a>
+              <a href="#how">How it works</a>
+            </nav>
 
-        <div className="lm9-actions">
-          <button className="lm9-btn lm9-btn-ghost">Sign in</button>
-          <button className="lm9-btn lm9-btn-primary">Create account</button>
-        </div>
-      </header>
+            <div className="lm9-actions">
+              <button
+                type="button"
+                className="lm9-btn lm9-btn-ghost"
+                onClick={() => navigate("/connexion")}
+              >
+                Connexion
+              </button>
+
+              <button
+                type="button"
+                className="lm9-btn lm9-btn-primary"
+                onClick={() => navigate("/inscription")}
+              >
+                Créer un compte
+              </button>
+            </div>
+          </div>
+        </header>
 
       <main className="lm9-main">
         <section className="lm9-hero">

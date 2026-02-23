@@ -1,34 +1,65 @@
-import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
-
+import { doc, onSnapshot } from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { claimDailyBonus } from "../services/wallet";
 import "./lobby.css";
-
 
 export default function Lobby() {
   const navigate = useNavigate();
+  const user = auth.currentUser;
 
-  const balance = 12840;
+  const [balance, setBalance] = useState(0);
+  const [profileName, setProfileName] = useState(user?.displayName || "Profil");
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  const user = auth.currentUser;
-  const displayName = user?.displayName || "Profil";
-  const photoURL = user?.photoURL || "";
-
   useEffect(() => {
-    const onDown = (e) => {
+    function onClickOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false);
       }
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    setProfileName(user.displayName || "Profil");
 
+    const ref = doc(db, "users", user.uid);
+    return onSnapshot(ref, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      setBalance(data.balance ?? 0);
+    });
+  }, [user]);
+
+  async function handleDailyBonus() {
+    try {
+      if (!user) return;
+      const res = await claimDailyBonus(user.uid);
+      if (!res.ok) alert(res.reason);
+      else alert("Bonus quotidien +500 jetons !");
+    } catch (e) {
+      console.error(e);
+      alert("Erreur: impossible de réclamer le bonus.");
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      setMenuOpen(false);
+      await signOut(auth);
+      navigate("/", { replace: true });
+    } catch (e) {
+      console.error(e);
+      alert("Erreur: impossible de se déconnecter.");
+    }
+  }
 
   const games = [
     {
@@ -36,7 +67,7 @@ export default function Lobby() {
       title: "Roulette européenne (0)",
       desc: "Une seule case 0. Table classique, mises rapides.",
       meta: ["0", "Rouge/Noir", "Pair/Impair", "Douzaines"],
-      badge: "RTP démo",
+      badge: "0",
       cta: "Jouer",
       onClick: () => alert("À brancher: page Roulette (0)"),
     },
@@ -79,11 +110,11 @@ export default function Lobby() {
     {
       id: "blackjack",
       title: "Blackjack",
-      desc: "Hit, Stand, Double. Historique et résultats vérifiables.",
+      desc: "Hit, Stand, Double. Résultats et solde en jetons.",
       meta: ["Hit", "Stand", "Double", "3:2"],
       badge: "Cartes",
       cta: "Jouer",
-      onClick: () => alert("À brancher: Blackjack"),
+      onClick: () => navigate("/blackjack"),
     },
   ];
 
@@ -103,48 +134,39 @@ export default function Lobby() {
               <div className="val">{balance.toLocaleString()} jetons</div>
             </div>
 
-              <div className="lm9-profile" ref={menuRef}>
-                <button
-                  type="button"
-                  className="lm9-profile-btn"
-                  onClick={() => setMenuOpen((v) => !v)}
-                >
-                  {photoURL ? (
-                    <img className="lm9-avatar-img" src={photoURL} alt="Profil" />
-                  ) : (
-                    <div className="lm9-avatar-fallback">
-                      {(displayName?.[0] || "P").toUpperCase()}
-                    </div>
-                  )}
-                  <span>{displayName}</span>
-                  <span className="chev">▾</span>
-                </button>
+            <button
+              type="button"
+              className="lm9-profile-btn"
+              onClick={handleDailyBonus}
+              title="Réclamer le bonus quotidien"
+            >
+              +500 (daily)
+            </button>
 
-                {menuOpen && (
-                  <div className="lm9-profile-menu">
-                    <button type="button" onClick={() => navigate("/profil")}>
-                      Mon profil
-                    </button>
-                    <button type="button" onClick={() => alert("À faire: historique")}>
-                      Historique
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await signOut(auth);
-                          navigate("/", { replace: true });
-                        } catch (e) {
-                          console.error(e);
-                          alert("Erreur lors de la déconnexion.");
-                        }
-                      }}
-                    >
-                      Se déconnecter
-                    </button>
-                  </div>
-                )}
-              </div>
+            <div className="lm9-profile" ref={menuRef}>
+              <button
+                type="button"
+                className="lm9-profile-btn"
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                <span>{profileName}</span>
+                <span className="chev">▾</span>
+              </button>
+
+              {menuOpen && (
+                <div className="lm9-profile-menu">
+                  <button type="button" onClick={() => { setMenuOpen(false); navigate("/profil"); }}>
+                    Mon profil
+                  </button>
+                  <button type="button" onClick={() => navigate("/historique")}>
+                    Historique
+                  </button>
+                  <button type="button" onClick={handleLogout}>
+                    Se déconnecter
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -152,19 +174,12 @@ export default function Lobby() {
       <main className="lm9-lobby-main">
         <div className="lm9-lobby-head">
           <h1>Choisis un jeu</h1>
-          <p>
-            3 Slots • 2 Roulettes (0 et 00) • 1 Blackjack — jetons virtuels uniquement.
-          </p>
+          <p>3 Slots • 2 Roulettes (0 et 00) • 1 Blackjack — jetons virtuels uniquement.</p>
         </div>
 
         <div className="lm9-games-grid">
           {games.map((g) => (
-            <button
-              key={g.id}
-              type="button"
-              className="lm9-game-card"
-              onClick={g.onClick}
-            >
+            <button key={g.id} type="button" className="lm9-game-card" onClick={g.onClick}>
               <div className="lm9-game-top">
                 <div className="lm9-game-badge">{g.badge}</div>
                 <div className="lm9-game-title">{g.title}</div>
@@ -186,7 +201,7 @@ export default function Lobby() {
         </div>
 
         <div className="lm9-lobby-note">
-          <b>Note :</b> Ceci est une simulation éducative. Aucun argent réel et aucun gain.
+          <b>Note :</b> Simulation éducative. Aucun argent réel et aucun gain.
         </div>
       </main>
     </div>

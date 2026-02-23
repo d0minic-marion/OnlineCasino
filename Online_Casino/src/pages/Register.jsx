@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../firebase";
+import { ensureUserDoc } from "../services/wallet";
 import "./auth.css";
 
 export default function Register() {
@@ -50,11 +51,17 @@ export default function Register() {
 
     try {
       setLoading(true);
-      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
 
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await updateProfile(cred.user, { displayName: name.trim() });
 
-      setSuccess("Compte créé avec succès. Vous pouvez maintenant vous connecter.");
+      await ensureUserDoc(cred.user.uid, {
+        displayName: name.trim(),
+        phone: "",
+      });
+
+      setSuccess("Compte créé avec succès. Redirection…");
+      navigate("/lobby", { replace: true });
     } catch (err) {
       setError(friendlyAuthError(err.code));
     } finally {
@@ -72,7 +79,7 @@ export default function Register() {
 
         <h1 className="lm9-auth-title">Créer un compte</h1>
         <p className="lm9-auth-desc">
-          Crée ton compte pour obtenir un solde de départ et tester les jeux.
+          Crée ton compte pour obtenir un solde de départ (5000 jetons) et tester les jeux.
         </p>
 
         {(error || success) && (
@@ -86,11 +93,9 @@ export default function Register() {
             Nom d’utilisateur
             <input
               className="lm9-input"
-              type="text"
-              placeholder="ex. Dominic"
-              autoComplete="nickname"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="Ton nom"
             />
           </label>
 
@@ -99,10 +104,10 @@ export default function Register() {
             <input
               className="lm9-input"
               type="email"
-              placeholder="exemple@domaine.com"
-              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="exemple@domaine.com"
+              autoComplete="email"
             />
           </label>
 
@@ -111,10 +116,10 @@ export default function Register() {
             <input
               className="lm9-input"
               type="password"
-              placeholder="Minimum 6 caractères"
-              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="new-password"
             />
           </label>
 
@@ -123,14 +128,14 @@ export default function Register() {
             <input
               className="lm9-input"
               type="password"
-              placeholder="Répéter le mot de passe"
-              autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="new-password"
             />
           </label>
 
-          <label className="lm9-check lm9-check-terms">
+          <label className="lm9-check">
             <input
               type="checkbox"
               checked={accepted}

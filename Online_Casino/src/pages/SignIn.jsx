@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
+import { ensureUserDoc } from "../services/wallet";
 import "./auth.css";
 
 export default function SignIn() {
@@ -10,7 +11,6 @@ export default function SignIn() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const navigate = useNavigate();
 
@@ -33,7 +33,6 @@ export default function SignIn() {
   async function handleSignIn(e) {
     e.preventDefault();
     setError("");
-    setSuccess("");
 
     if (!email.trim() || !password) {
       setError("Veuillez remplir le courriel et le mot de passe.");
@@ -42,8 +41,14 @@ export default function SignIn() {
 
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      setSuccess("Connexion réussie.");
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+
+      await ensureUserDoc(cred.user.uid, {
+        displayName: cred.user.displayName || "",
+        phone: "",
+      });
+
+      navigate("/lobby", { replace: true });
     } catch (err) {
       setError(friendlyAuthError(err.code));
     } finally {
@@ -64,11 +69,7 @@ export default function SignIn() {
           Connecte-toi pour accéder aux jeux et à ton solde de jetons virtuels.
         </p>
 
-        {(error || success) && (
-          <div className={`lm9-alert ${error ? "err" : "ok"}`}>
-            {error || success}
-          </div>
-        )}
+        {error && <div className="lm9-alert err">{error}</div>}
 
         <form className="lm9-auth-form" onSubmit={handleSignIn}>
           <label className="lm9-label">
